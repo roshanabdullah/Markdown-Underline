@@ -81,7 +81,6 @@ messageSent(){
 // app module.ts
 
 import { MarkdownModule, MarkedOptions } from 'ngx-markdown';
-import { CustomRenderer } from './file';
 
 
 
