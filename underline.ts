@@ -1,19 +1,41 @@
-//custom renderer
-import { Renderer } from "marked";
+//pipe to render all headings and underline text
+
+import { Pipe, PipeTransform } from '@angular/core';
+import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
+import { marked } from 'marked';
 
 
-export class CustomRenderer extends Renderer {
-    constructor(){
-        super();
+
+
+@Pipe({
+  name: 'sanitized'
+})
+export class SanitizedPipe implements PipeTransform {
+
+  constructor(private sanitized: DomSanitizer) {
+
+    const renderer = new marked.Renderer();
+    renderer.heading = (text: string, level: number) => {
+      return `<h${level}>${text}</h${level}>`;
     }
 
-    override text(text: string): string {
+    renderer.text = (text: string) => {
+      const underlineRegex = /\+\+(.*?)\+\+/g;
+      const result = text.replace(underlineRegex, '<u>$1</u>');
+      return result;
+    };
 
-        const underlineRegex = /\+\+(.*?)\+\+/g;
-        const result = text.replace(underlineRegex, '<u>$1</u>')
-        return result;  --> add underline by using text ++text++
-    }
+    marked.setOptions({renderer})
+  }
 
+
+  
+  transform(value: string): SafeHtml {
+
+    const markdownHtml = marked(value);
+    return this.sanitized.bypassSecurityTrustHtml(markdownHtml);
+      
+  }
 }
 
 //main chat component where message is being sent
@@ -54,7 +76,7 @@ messageSent(){
   }
 
 //html
-<markdown  [data]="markdown"></markdown>
+<markdown  [innerHTML]="markdown | sanitized"></markdown>
 
 // app module.ts
 
@@ -67,11 +89,6 @@ imports: [
 MarkdownModule.forRoot({
       markedOptions: {
         provide: MarkedOptions,
-        useFactory: () => {
-          return {
-            renderer: new CustomRenderer()
-          }
-        }
       }
     }),
 
